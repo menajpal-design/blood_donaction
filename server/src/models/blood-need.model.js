@@ -89,6 +89,22 @@ const bloodNeedSchema = new mongoose.Schema(
       default: 'pending',
       index: true,
     },
+    needsRegularBlood: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    medicalCondition: {
+      type: String,
+      enum: ['none', 'thalassemia', 'other_regular'],
+      default: 'none',
+      index: true,
+    },
+    autoDeleteAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
     contactPhone: {
       type: String,
       required: true,
@@ -136,5 +152,7 @@ const bloodNeedSchema = new mongoose.Schema(
     ],
   },
 );
+
+bloodNeedSchema.index({ autoDeleteAt: 1 }, { expireAfterSeconds: 0 });
 
 export const BloodNeed = mongoose.model('BloodNeed', bloodNeedSchema);

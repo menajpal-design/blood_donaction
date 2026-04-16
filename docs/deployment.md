@@ -49,8 +49,13 @@ VITE_API_BASE_URL=https://your-api-domain.com/api/v1
 1. Prepare env files:
 
 ```bash
+# Windows PowerShell
 copy server/.env.example server/.env
 copy client/.env.example client/.env
+
+# Linux/macOS
+cp server/.env.example server/.env
+cp client/.env.example client/.env
 ```
 
 2. Build and start containers:

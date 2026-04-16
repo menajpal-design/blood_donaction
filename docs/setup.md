@@ -29,8 +29,13 @@ npm install
 Create environment files from examples:
 
 ```bash
+# Windows PowerShell
 copy server/.env.example server/.env
 copy client/.env.example client/.env
+
+# Linux/macOS
+cp server/.env.example server/.env
+cp client/.env.example client/.env
 ```
 
 ### Server Environment Variables

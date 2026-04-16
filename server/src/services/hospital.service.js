@@ -29,12 +29,8 @@ const sanitizeHospital = (doc) => ({
 });
 
 const assertAdminCanCreateHospital = (actor) => {
-  if (
-    actor.role !== USER_ROLES.SUPER_ADMIN &&
-    actor.role !== USER_ROLES.DISTRICT_ADMIN &&
-    actor.role !== USER_ROLES.UPAZILA_ADMIN
-  ) {
-    throw new ApiError(403, 'Only admin users can create hospitals');
+  if (actor.role !== USER_ROLES.UPAZILA_ADMIN) {
+    throw new ApiError(403, 'Only upazila admin can create hospitals');
   }
 };
 

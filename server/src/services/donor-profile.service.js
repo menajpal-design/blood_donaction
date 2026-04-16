@@ -58,6 +58,54 @@ const buildPublicDonorProfile = (userDoc, profileDoc) => {
   };
 };
 
+const buildDonorSearchResults = (userDocs, profileDocs, filters = {}) => {
+  const profileMap = new Map(profileDocs.map((profile) => [String(profile.userId), profile]));
+
+  const data = userDocs
+    .map((userDoc) => {
+      const profile = profileMap.get(String(userDoc._id));
+
+      return {
+        ...(profile ? sanitizeDonorProfile(profile) : {
+          id: userDoc._id,
+          userId: userDoc._id,
+          bloodGroup: userDoc.bloodGroup || null,
+          lastDonationDate: null,
+          availabilityStatus: 'available',
+          donationHistory: [],
+          createdAt: userDoc.createdAt || null,
+          updatedAt: userDoc.updatedAt || null,
+        }),
+        donor: {
+          name: userDoc.name,
+          phone: userDoc.phone,
+          location: userDoc.location,
+          profileImageUrl: userDoc.profileImageUrl || null,
+          locationNames: {
+            division: userDoc.locationNames?.division || null,
+            district: userDoc.locationNames?.district || null,
+            upazila: userDoc.locationNames?.upazila || null,
+            union: userDoc.locationNames?.union || null,
+          },
+        },
+      };
+    })
+    .filter(Boolean)
+    .filter((donor) => {
+      if (filters.availabilityStatus && donor.availabilityStatus !== filters.availabilityStatus) {
+        return false;
+      }
+
+      if (filters.bloodGroup && donor.bloodGroup !== filters.bloodGroup) {
+        return false;
+      }
+
+      return true;
+    });
+
+  return data;
+};
+
 export const donorProfileService = {
   upsertMyProfile: async (currentUser, payload) => {
     assertDonorRole(currentUser);
@@ -205,8 +253,10 @@ export const donorProfileService = {
 
     return getOrSetCached(cacheKey, DONOR_SEARCH_CACHE_TTL_MS, async () => {
       const donorUsers = await User.find(userFilter)
-        .select('_id name phone location locationNames profileImageUrl')
+        .select('_id name phone location locationNames profileImageUrl bloodGroup createdAt updatedAt')
+        .sort({ createdAt: -1 })
         .lean();
+
       if (donorUsers.length === 0) {
         return {
           data: [],
@@ -220,51 +270,13 @@ export const donorProfileService = {
       }
 
       const donorUserIds = donorUsers.map((user) => user._id);
-      const donorUserMap = new Map(donorUsers.map((user) => [String(user._id), user]));
-
-      const profileFilter = {
-        userId: { $in: donorUserIds },
-      };
-
-      if (filters.bloodGroup) {
-        profileFilter.bloodGroup = filters.bloodGroup;
-      }
-
-      if (filters.availabilityStatus) {
-        profileFilter.availabilityStatus = filters.availabilityStatus;
-      }
-
-      const total = await DonorProfile.countDocuments(profileFilter);
-      const profiles = await DonorProfile.find(profileFilter)
-        .sort({ updatedAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean();
-
-      const data = profiles.map((profile) => {
-        const donorUser = donorUserMap.get(String(profile.userId));
-
-        return {
-          ...sanitizeDonorProfile(profile),
-          donor: donorUser
-            ? {
-                name: donorUser.name,
-                phone: donorUser.phone,
-                location: donorUser.location,
-                  profileImageUrl: donorUser.profileImageUrl || null,
-                locationNames: {
-                  division: donorUser.locationNames?.division || null,
-                  district: donorUser.locationNames?.district || null,
-                  upazila: donorUser.locationNames?.upazila || null,
-                  union: donorUser.locationNames?.union || null,
-                },
-              }
-            : null,
-        };
-      });
+      const profiles = await DonorProfile.find({ userId: { $in: donorUserIds } }).lean();
+      const data = buildDonorSearchResults(donorUsers, profiles, filters);
+      const total = data.length;
+      const paginatedData = data.slice((page - 1) * limit, (page - 1) * limit + limit);
 
       return {
-        data,
+        data: paginatedData,
         pagination: {
           page,
           limit,
@@ -312,8 +324,10 @@ export const donorProfileService = {
 
     return getOrSetCached(cacheKey, DONOR_SEARCH_CACHE_TTL_MS, async () => {
       const donorUsers = await User.find(userFilter)
-        .select('_id name phone location locationNames profileImageUrl')
+        .select('_id name phone location locationNames profileImageUrl bloodGroup createdAt updatedAt')
+        .sort({ createdAt: -1 })
         .lean();
+
       if (donorUsers.length === 0) {
         return {
           data: [],
@@ -327,51 +341,13 @@ export const donorProfileService = {
       }
 
       const donorUserIds = donorUsers.map((user) => user._id);
-      const donorUserMap = new Map(donorUsers.map((user) => [String(user._id), user]));
-
-      const profileFilter = {
-        userId: { $in: donorUserIds },
-      };
-
-      if (filters.bloodGroup) {
-        profileFilter.bloodGroup = filters.bloodGroup;
-      }
-
-      if (filters.availabilityStatus) {
-        profileFilter.availabilityStatus = filters.availabilityStatus;
-      }
-
-      const total = await DonorProfile.countDocuments(profileFilter);
-      const profiles = await DonorProfile.find(profileFilter)
-        .sort({ updatedAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean();
-
-      const data = profiles.map((profile) => {
-        const donorUser = donorUserMap.get(String(profile.userId));
-
-        return {
-          ...sanitizeDonorProfile(profile),
-          donor: donorUser
-            ? {
-                name: donorUser.name,
-                phone: donorUser.phone,
-                location: donorUser.location,
-                profileImageUrl: donorUser.profileImageUrl || null,
-                locationNames: {
-                  division: donorUser.locationNames?.division || null,
-                  district: donorUser.locationNames?.district || null,
-                  upazila: donorUser.locationNames?.upazila || null,
-                  union: donorUser.locationNames?.union || null,
-                },
-              }
-            : null,
-        };
-      });
+      const profiles = await DonorProfile.find({ userId: { $in: donorUserIds } }).lean();
+      const data = buildDonorSearchResults(donorUsers, profiles, filters);
+      const total = data.length;
+      const paginatedData = data.slice((page - 1) * limit, (page - 1) * limit + limit);
 
       return {
-        data,
+        data: paginatedData,
         pagination: {
           page,
           limit,

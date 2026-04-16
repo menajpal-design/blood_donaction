@@ -41,8 +41,8 @@ donorProfileRouter.get('/me/history', authorizePermission('donor:history:self'),
 
 donorProfileRouter.get(
   '/search',
-  authorizeMinimumRole(USER_ROLES.UNION_LEADER),
-  authorizePermission('donor:read:union'),
+  authorizeMinimumRole(USER_ROLES.DONOR),
+  authorizePermission('donor:read:self'),
   searchDonors,
 );
 

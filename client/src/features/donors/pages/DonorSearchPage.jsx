@@ -3,10 +3,8 @@ import { toast } from 'react-hot-toast';
 
 import { LocationSelector } from '../../../components/location/LocationSelector.jsx';
 import { donorSearchService } from '../services/donorSearchService.js';
-import { useAuth } from '../../auth/context/AuthContext.jsx';
 
 export const DonorSearchPage = () => {
-  const { isAuthenticated } = useAuth();
   const [bloodGroup, setBloodGroup] = useState('');
   const [availabilityStatus, setAvailabilityStatus] = useState('');
   const [results, setResults] = useState([]);
@@ -44,17 +42,11 @@ export const DonorSearchPage = () => {
 
   useEffect(() => {
     const timer = window.setTimeout(async () => {
-      if (!isAuthenticated) {
-        setResults([]);
-        setMeta(null);
-        return;
-      }
-
       setIsLoading(true);
       setError('');
 
       try {
-        const response = await donorSearchService.searchAuthenticated(searchFilters);
+        const response = await donorSearchService.search(searchFilters);
         setResults(response.data);
         setMeta(response.meta);
       } catch (requestError) {
@@ -69,7 +61,7 @@ export const DonorSearchPage = () => {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [searchFilters, isAuthenticated]);
+  }, [searchFilters]);
 
   const clearFilters = () => {
     setBloodGroup('');
@@ -86,8 +78,8 @@ export const DonorSearchPage = () => {
   return (
     <section className="feature-page reveal">
       <header className="feature-header">
-        <p className="eyebrow">Donor Discovery</p>
-        <h2>Advanced Donor Search</h2>
+        <p className="eyebrow">Donor Directory</p>
+        <h2>Find Available Donors</h2>
       </header>
 
       <div className="toolbar">
@@ -129,6 +121,7 @@ export const DonorSearchPage = () => {
         mode="filter"
         idPrefix="donorSearch"
         resetKey={locationResetKey}
+        enableAutoDetect={false}
         onChange={(value) => {
           setLocationFilters({
             divisionId: value.divisionId,

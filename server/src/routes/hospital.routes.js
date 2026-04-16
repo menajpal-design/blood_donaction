@@ -16,7 +16,7 @@ hospitalRouter.use(authenticate, attachCurrentUser);
 
 hospitalRouter.post(
   '/',
-  authorizeRoles(USER_ROLES.SUPER_ADMIN, USER_ROLES.DISTRICT_ADMIN, USER_ROLES.UPAZILA_ADMIN),
+  authorizeRoles(USER_ROLES.UPAZILA_ADMIN),
   createHospital,
 );
 

@@ -71,6 +71,7 @@ export const FilterPanel = ({
         mode="filter"
         idPrefix="homeFilter"
         resetKey={locationResetKey}
+        enableAutoDetect={false}
         onChange={onLocationChange}
       />
     </section>

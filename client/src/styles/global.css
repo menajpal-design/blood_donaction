@@ -374,12 +374,29 @@ body {
   display: none;
 }
 
+.mobile-menu-toggle {
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
 .app-content {
   padding: 1.2rem 1.3rem 1.4rem;
 }
 
 .feature-page {
   animation: riseIn 0.35s ease-out;
+}
+
+.home-page-stack {
+  display: grid;
+  gap: 1rem;
 }
 
 .auth-page {
@@ -1255,6 +1272,53 @@ body {
   padding: 0.5rem 0.7rem;
 }
 
+.toolbar input {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+  font-family: inherit;
+  padding: 0.5rem 0.7rem;
+}
+
+.toolbar input[type='checkbox'] {
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.patient-page {
+  overflow-x: hidden;
+}
+
+.patient-toolbar {
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.patient-toolbar label {
+  min-width: 110px;
+}
+
+.patient-toolbar input,
+.patient-toolbar select,
+.patient-toolbar button {
+  min-width: 150px;
+}
+
+.patient-table-card {
+  overflow-x: auto;
+}
+
+.patient-table-card table {
+  min-width: 760px;
+}
+
+.patient-table-card td {
+  word-break: break-word;
+}
+
 .role-selector-toolbar {
   margin-top: 0.8rem;
   margin-bottom: 0.2rem;
@@ -1440,6 +1504,35 @@ button:hover {
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1rem 0;
+  }
+
+  .mobile-menu-toggle {
+    display: inline-flex;
+  }
+
+  .app-frame.sidebar-open {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgba(7, 12, 12, 0.5);
+  }
+
+  .sidebar.mobile-open {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(84vw, 320px);
+    z-index: 30;
+    overflow-y: auto;
+    box-shadow: 0 18px 38px rgba(6, 12, 12, 0.35);
   }
 
   .mobile-header h2 {
@@ -1770,6 +1863,25 @@ button:hover {
     left: auto;
     top: auto;
   }
+
+  .patient-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+    align-items: stretch;
+  }
+
+  .patient-toolbar label,
+  .patient-toolbar input,
+  .patient-toolbar select,
+  .patient-toolbar button {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .patient-table-card table {
+    min-width: 680px;
+  }
 }
 
 /* Mobile-first layout enforcement */
@@ -1856,6 +1968,11 @@ button:hover {
 
   .mobile-header,
   .mobile-nav {
+    display: none;
+  }
+
+  .sidebar-overlay,
+  .mobile-menu-toggle {
     display: none;
   }
 

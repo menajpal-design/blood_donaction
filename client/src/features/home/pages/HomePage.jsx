@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
-import { MainLayout } from '../../../components/layout/MainLayout.jsx';
 import { donorSearchService } from '../../donors/services/donorSearchService.js';
 import { DonorGridSection } from '../components/DonorGridSection.jsx';
 import { FilterPanel } from '../components/FilterPanel.jsx';
@@ -131,7 +130,7 @@ export const HomePage = () => {
   }, [donors]);
 
   return (
-    <MainLayout>
+    <section className="feature-page reveal home-page-stack">
       <HeroSection />
 
       <FilterPanel
@@ -163,7 +162,7 @@ export const HomePage = () => {
 
       <HomeCtaSection />
       <HomeFooter />
-    </MainLayout>
+    </section>
   );
 };
 

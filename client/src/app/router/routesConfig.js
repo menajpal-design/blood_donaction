@@ -1,4 +1,4 @@
-import { Home, Search, BarChart3, Users, UserCircle2 } from 'lucide-react';
+import { Home, Search, BarChart3, Users, UserCircle2, ClipboardList } from 'lucide-react';
 
 export const appRoutes = [
   {
@@ -10,10 +10,17 @@ export const appRoutes = [
   },
   {
     key: 'donors',
-    label: 'Donor Search',
+    label: 'Donor Directory',
     path: '/donors',
     icon: Search,
-    roles: ['super_admin', 'district_admin', 'upazila_admin', 'union_leader'],
+    roles: ['super_admin', 'district_admin', 'upazila_admin', 'union_leader', 'donor', 'finder'],
+  },
+  {
+    key: 'patients',
+    label: 'Patient List',
+    path: '/patients',
+    icon: ClipboardList,
+    roles: ['super_admin', 'district_admin', 'upazila_admin', 'union_leader', 'donor', 'finder'],
   },
   {
     key: 'profile',

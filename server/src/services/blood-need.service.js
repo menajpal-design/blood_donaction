@@ -1,10 +1,39 @@
 import { BloodNeed } from '../models/blood-need.model.js';
 import { DonorProfile } from '../models/donor-profile.model.js';
 
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+const toBoolean = (value) => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+
+  return false;
+};
+
+const normalizeCondition = (value) => {
+  if (!value) {
+    return 'none';
+  }
+
+  return ['thalassemia', 'other_regular'].includes(value) ? value : 'none';
+};
+
 export const bloodNeedService = {
   async createBloodNeed(data, createdBy) {
+    const needsRegularBlood = toBoolean(data.needsRegularBlood);
+    const medicalCondition = normalizeCondition(data.medicalCondition);
+    const shouldKeep = needsRegularBlood || medicalCondition !== 'none';
+
     const bloodNeed = new BloodNeed({
       ...data,
+      needsRegularBlood,
+      medicalCondition,
+      autoDeleteAt: shouldKeep ? null : new Date(Date.now() + SEVEN_DAYS_MS),
       createdBy,
     });
     return bloodNeed.save();
@@ -197,6 +226,10 @@ export const bloodNeedService = {
     const bloodNeed = await BloodNeed.findById(id);
     if (!bloodNeed) {
       throw new Error('Blood need request not found');
+    }
+
+    if (bloodNeed.needsRegularBlood || bloodNeed.medicalCondition !== 'none') {
+      throw new Error('Regular blood need requests cannot be deleted by users');
     }
 
     if (bloodNeed.userId.toString() !== userId && bloodNeed.createdBy.toString() !== userId) {

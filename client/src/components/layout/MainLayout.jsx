@@ -3,7 +3,6 @@ import { NavLink } from 'react-router-dom';
 const homeNavLinks = [
   { key: 'home', label: 'Home', path: '/home' },
   { key: 'donors', label: 'Donor Search', path: '/donors' },
-  { key: 'dashboard', label: 'Dashboard', path: '/dashboard' },
   { key: 'community', label: 'Community', path: '/community' },
 ];
 
