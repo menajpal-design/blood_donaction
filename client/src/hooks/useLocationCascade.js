@@ -1,5 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { cachedGet } from '../services/apiClient.js';
+import {
+  getPublicDistrictsByDivisionId,
+  getPublicDivisions,
+  getPublicPouroshavasByCriteria,
+  getPublicPouroshavasByUpazilaId,
+  getPublicUnionsByUpazilaId,
+  getPublicUpazilasByDistrictId,
+} from '../services/locationDataset.js';
 
 const logUnionDebug = (label, payload) => {
   if (!import.meta.env.DEV) {
@@ -23,6 +31,36 @@ const pendingRequests = {
   upazilasByDistrict: new Map(),
   unionsByUpazila: new Map(),
   pouroshavasByUpazila: new Map(),
+};
+
+const withPublicDatasetFallback = async ({ apiLoader, publicLoader, fallbackMessage, requestSeq, currentSeqRef, onFallback }) => {
+  try {
+    const apiData = await apiLoader();
+
+    if (Array.isArray(apiData) && apiData.length === 0) {
+      const publicData = await publicLoader();
+      if (Array.isArray(publicData) && publicData.length > 0) {
+        onFallback?.(publicData);
+        console.warn(fallbackMessage, 'API returned an empty list.');
+        return publicData;
+      }
+    }
+
+    return apiData;
+  } catch (apiError) {
+    try {
+      const publicData = await publicLoader();
+      onFallback?.(publicData);
+      console.warn(fallbackMessage, apiError);
+      return publicData;
+    } catch (publicError) {
+      if (requestSeq !== currentSeqRef.current) {
+        return [];
+      }
+
+      throw apiError ?? publicError;
+    }
+  }
 };
 
 const getOrCreatePendingRequest = (map, key, fetcher) => {
@@ -121,7 +159,13 @@ export const useLocationCascade = () => {
         pendingRequests.divisions = loadRequest;
       }
 
-      const data = await loadRequest;
+      const data = await withPublicDatasetFallback({
+        apiLoader: () => loadRequest,
+        publicLoader: getPublicDivisions,
+        fallbackMessage: 'Falling back to public location dataset for divisions.',
+        requestSeq: 0,
+        currentSeqRef: districtRequestSeqRef,
+      });
       locationStateCache.divisions = data;
       setDivisions(data);
     } catch (err) {
@@ -160,7 +204,13 @@ export const useLocationCascade = () => {
             return response?.data?.data || [];
           });
 
-      const data = await loadRequest;
+      const data = await withPublicDatasetFallback({
+        apiLoader: () => loadRequest,
+        publicLoader: () => getPublicDistrictsByDivisionId(divisionId),
+        fallbackMessage: 'Falling back to public location dataset for districts.',
+        requestSeq,
+        currentSeqRef: districtRequestSeqRef,
+      });
 
       if (requestSeq !== districtRequestSeqRef.current) {
         return;
@@ -210,7 +260,13 @@ export const useLocationCascade = () => {
             return response?.data?.data || [];
           });
 
-      const data = await loadRequest;
+      const data = await withPublicDatasetFallback({
+        apiLoader: () => loadRequest,
+        publicLoader: () => getPublicUpazilasByDistrictId(districtId),
+        fallbackMessage: 'Falling back to public location dataset for upazilas.',
+        requestSeq,
+        currentSeqRef: upazilaRequestSeqRef,
+      });
 
       if (requestSeq !== upazilaRequestSeqRef.current) {
         return;
@@ -263,6 +319,10 @@ export const useLocationCascade = () => {
       setIsLoadingUnions(true);
       setError('');
 
+      const selectedUpazilaNode = upazilas.find((item) => item.id === upazilaId) || null;
+      const selectedDistrictNode = districts.find((item) => item.id === selectedDistrict) || null;
+      const selectedDivisionNode = divisions.find((item) => item.id === selectedDivision) || null;
+
       logUnionDebug('Unions API request params', {
         endpoint: `/locations/upazilas/${upazilaId}/unions`,
         upazilaId,
@@ -280,7 +340,22 @@ export const useLocationCascade = () => {
             return response?.data?.data || [];
           });
 
-      const data = await loadRequest;
+      const data = await withPublicDatasetFallback({
+        apiLoader: () => loadRequest,
+        publicLoader: () =>
+          getPublicUnionsByUpazilaId({
+            upazilaId,
+            upazilaName: selectedUpazilaNode?.name,
+            upazilaBnName: selectedUpazilaNode?.bnName,
+            districtName: selectedDistrictNode?.name,
+            districtBnName: selectedDistrictNode?.bnName,
+            divisionName: selectedDivisionNode?.name,
+            divisionBnName: selectedDivisionNode?.bnName,
+          }),
+        fallbackMessage: 'Falling back to public location dataset for unions.',
+        requestSeq,
+        currentSeqRef: unionRequestSeqRef,
+      });
 
       if (requestSeq !== unionRequestSeqRef.current) {
         return;
@@ -329,6 +404,10 @@ export const useLocationCascade = () => {
       setIsLoadingPouroshavas(true);
       setError('');
 
+      const selectedUpazilaNode = upazilas.find((item) => item.id === upazilaId) || null;
+      const selectedDistrictNode = districts.find((item) => item.id === selectedDistrict) || null;
+      const selectedDivisionNode = divisions.find((item) => item.id === selectedDivision) || null;
+
       const loadRequest = forceRefresh
         ? cachedGet(`/locations/upazilas/${upazilaId}/pouroshavas`, {
             ttlMs: 5 * 60 * 1000,
@@ -344,7 +423,22 @@ export const useLocationCascade = () => {
             },
           );
 
-      const data = await loadRequest;
+      const data = await withPublicDatasetFallback({
+        apiLoader: () => loadRequest,
+        publicLoader: () =>
+          getPublicPouroshavasByCriteria({
+            upazilaId,
+            upazilaName: selectedUpazilaNode?.name,
+            upazilaBnName: selectedUpazilaNode?.bnName,
+            districtName: selectedDistrictNode?.name,
+            districtBnName: selectedDistrictNode?.bnName,
+            divisionName: selectedDivisionNode?.name,
+            divisionBnName: selectedDivisionNode?.bnName,
+          }),
+        fallbackMessage: 'Falling back to public location dataset for pouroshavas.',
+        requestSeq,
+        currentSeqRef: pouroshavaRequestSeqRef,
+      });
 
       if (requestSeq !== pouroshavaRequestSeqRef.current) {
         return;
