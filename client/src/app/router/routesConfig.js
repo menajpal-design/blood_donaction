@@ -1,4 +1,4 @@
-import { Home, Search, BarChart3, Users } from 'lucide-react';
+import { Home, Search, BarChart3, Users, UserCircle2 } from 'lucide-react';
 
 export const appRoutes = [
   {
@@ -6,14 +6,21 @@ export const appRoutes = [
     label: 'Dashboard',
     path: '/dashboard',
     icon: Home,
-    roles: ['super_admin', 'district_admin', 'upazila_admin', 'union_leader', 'donor'],
+    roles: ['super_admin', 'district_admin', 'upazila_admin', 'union_leader', 'donor', 'finder'],
   },
   {
     key: 'donors',
     label: 'Donor Search',
     path: '/donors',
     icon: Search,
-    roles: ['super_admin', 'district_admin', 'upazila_admin', 'union_leader', 'donor'],
+    roles: ['super_admin', 'district_admin', 'upazila_admin', 'union_leader'],
+  },
+  {
+    key: 'profile',
+    label: 'Profile',
+    path: '/profile',
+    icon: UserCircle2,
+    roles: ['super_admin', 'district_admin', 'upazila_admin', 'union_leader', 'donor', 'finder'],
   },
   {
     key: 'reports',
@@ -27,6 +34,6 @@ export const appRoutes = [
     label: 'Community',
     path: '/community',
     icon: Users,
-    roles: ['super_admin', 'district_admin', 'upazila_admin', 'union_leader', 'donor'],
+    roles: ['super_admin', 'district_admin', 'upazila_admin', 'union_leader', 'donor', 'finder'],
   },
 ];

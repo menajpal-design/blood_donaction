@@ -18,6 +18,9 @@ export const AppShell = () => {
         </div>
 
         <div className="user-chip">
+          {user?.profileImageUrl ? (
+            <img className="user-chip-avatar" src={user.profileImageUrl} alt={user?.name || 'User'} />
+          ) : null}
           <strong>{user?.name || 'User'}</strong>
           <span>{user?.role || 'guest'}</span>
         </div>

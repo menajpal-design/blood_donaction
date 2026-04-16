@@ -27,6 +27,37 @@ const sanitizeDonorProfile = (profile) => {
   };
 };
 
+const buildPublicDonorProfile = (userDoc, profileDoc) => {
+  if (!userDoc) {
+    return null;
+  }
+
+  return {
+    id: profileDoc?._id || userDoc._id,
+    userId: userDoc._id,
+    name: userDoc.name,
+    profileImageUrl: userDoc.profileImageUrl || null,
+    bloodGroup: profileDoc?.bloodGroup || userDoc.bloodGroup || null,
+    lastDonationDate: profileDoc?.lastDonationDate || null,
+    availabilityStatus: profileDoc?.availabilityStatus || 'available',
+    location: userDoc.location || null,
+    locationNames: {
+      division: userDoc.locationNames?.division || null,
+      district: userDoc.locationNames?.district || null,
+      upazila: userDoc.locationNames?.upazila || null,
+      union: userDoc.locationNames?.union || null,
+      wardNumber: userDoc.locationNames?.wardNumber || null,
+    },
+    donationHistory: (profileDoc?.donationHistory || []).map((entry) => ({
+      donationDate: entry.donationDate,
+      location: entry.location || null,
+      notes: entry.notes || null,
+    })),
+    createdAt: profileDoc?.createdAt || userDoc.createdAt || null,
+    updatedAt: profileDoc?.updatedAt || userDoc.updatedAt || null,
+  };
+};
+
 export const donorProfileService = {
   upsertMyProfile: async (currentUser, payload) => {
     assertDonorRole(currentUser);
@@ -129,12 +160,22 @@ export const donorProfileService = {
     const page = Math.max(1, Number(filters.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(filters.limit) || 20));
 
-    const userFilter = {
+    // Regular donors and finders can see all donors
+    // Admins see only donors in their scope
+    let userFilter = {
       role: USER_ROLES.DONOR,
-      ...buildScopeFilter(currentUser),
     };
 
+    if (currentUser.role !== USER_ROLES.DONOR && currentUser.role !== USER_ROLES.FINDER) {
+      // Apply scope filter only for admin users
+      userFilter = {
+        ...userFilter,
+        ...buildScopeFilter(currentUser),
+      };
+    }
+
     const objectIdFilters = [
+      ['divisionId', filters.divisionId],
       ['districtId', filters.districtId],
       ['upazilaId', filters.upazilaId],
       ['unionId', filters.unionId],
@@ -164,7 +205,7 @@ export const donorProfileService = {
 
     return getOrSetCached(cacheKey, DONOR_SEARCH_CACHE_TTL_MS, async () => {
       const donorUsers = await User.find(userFilter)
-        .select('_id name phone location districtId upazilaId unionId')
+        .select('_id name phone location locationNames profileImageUrl')
         .lean();
       if (donorUsers.length === 0) {
         return {
@@ -210,9 +251,13 @@ export const donorProfileService = {
                 name: donorUser.name,
                 phone: donorUser.phone,
                 location: donorUser.location,
-                districtId: donorUser.districtId,
-                upazilaId: donorUser.upazilaId,
-                unionId: donorUser.unionId,
+                  profileImageUrl: donorUser.profileImageUrl || null,
+                locationNames: {
+                  division: donorUser.locationNames?.division || null,
+                  district: donorUser.locationNames?.district || null,
+                  upazila: donorUser.locationNames?.upazila || null,
+                  union: donorUser.locationNames?.union || null,
+                },
               }
             : null,
         };
@@ -228,5 +273,125 @@ export const donorProfileService = {
         },
       };
     });
+  },
+
+  searchPublicDonors: async (filters) => {
+    const page = Math.max(1, Number(filters.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(filters.limit) || 20));
+
+    const userFilter = {
+      role: USER_ROLES.DONOR,
+    };
+
+    const objectIdFilters = [
+      ['divisionId', filters.divisionId],
+      ['districtId', filters.districtId],
+      ['upazilaId', filters.upazilaId],
+      ['unionId', filters.unionId],
+    ];
+
+    objectIdFilters.forEach(([field, value]) => {
+      if (!value) {
+        return;
+      }
+
+      if (!mongoose.isValidObjectId(value)) {
+        throw new ApiError(400, `${field} must be a valid ObjectId`);
+      }
+
+      userFilter[field] = new mongoose.Types.ObjectId(value);
+    });
+
+    const cacheKey = buildCacheKey('donor-public-search', {
+      userFilter,
+      bloodGroup: filters.bloodGroup,
+      availabilityStatus: filters.availabilityStatus,
+      page,
+      limit,
+    });
+
+    return getOrSetCached(cacheKey, DONOR_SEARCH_CACHE_TTL_MS, async () => {
+      const donorUsers = await User.find(userFilter)
+        .select('_id name phone location locationNames profileImageUrl')
+        .lean();
+      if (donorUsers.length === 0) {
+        return {
+          data: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+          },
+        };
+      }
+
+      const donorUserIds = donorUsers.map((user) => user._id);
+      const donorUserMap = new Map(donorUsers.map((user) => [String(user._id), user]));
+
+      const profileFilter = {
+        userId: { $in: donorUserIds },
+      };
+
+      if (filters.bloodGroup) {
+        profileFilter.bloodGroup = filters.bloodGroup;
+      }
+
+      if (filters.availabilityStatus) {
+        profileFilter.availabilityStatus = filters.availabilityStatus;
+      }
+
+      const total = await DonorProfile.countDocuments(profileFilter);
+      const profiles = await DonorProfile.find(profileFilter)
+        .sort({ updatedAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean();
+
+      const data = profiles.map((profile) => {
+        const donorUser = donorUserMap.get(String(profile.userId));
+
+        return {
+          ...sanitizeDonorProfile(profile),
+          donor: donorUser
+            ? {
+                name: donorUser.name,
+                phone: donorUser.phone,
+                location: donorUser.location,
+                profileImageUrl: donorUser.profileImageUrl || null,
+                locationNames: {
+                  division: donorUser.locationNames?.division || null,
+                  district: donorUser.locationNames?.district || null,
+                  upazila: donorUser.locationNames?.upazila || null,
+                  union: donorUser.locationNames?.union || null,
+                },
+              }
+            : null,
+        };
+      });
+
+      return {
+        data,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    });
+  },
+
+  getPublicDonorProfileByUserId: async (userId) => {
+    const user = await User.findById(userId)
+      .select('_id name location locationNames profileImageUrl bloodGroup createdAt updatedAt role')
+      .lean();
+
+    if (!user || user.role !== USER_ROLES.DONOR) {
+      throw new ApiError(404, 'Donor profile not found');
+    }
+
+    const profile = await DonorProfile.findOne({ userId }).lean();
+    return buildPublicDonorProfile(user, profile);
   },
 };

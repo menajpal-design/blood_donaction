@@ -8,6 +8,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(5000),
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
   CLIENT_URL: z.string().url().or(z.literal('*')).default('http://localhost:5173'),
+  IMGBB_API_KEY: z.string().optional().default(''),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(15 * 60 * 1000),
