@@ -65,6 +65,14 @@ This starts both apps:
 - Client: http://localhost:5173
 - Server: http://localhost:5000
 
+## Seed Bangladesh Locations
+
+Populate the full Bangladesh location hierarchy (Division, District, Upazila, Union/Pouroshava):
+
+```bash
+npm run seed:locations --workspace server
+```
+
 ## Lint and Build
 
 ```bash

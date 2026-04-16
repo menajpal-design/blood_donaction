@@ -17,6 +17,19 @@ npm run build
 
 2. Set production environment values in server/.env.
 
+Minimum production server values:
+
+```env
+NODE_ENV=production
+PORT=5000
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>/bangla-blood
+CLIENT_URL=https://your-frontend-domain.com
+JWT_SECRET=<use-strong-random-32+char-secret>
+JWT_EXPIRES_IN=7d
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=200
+```
+
 3. Start backend:
 
 ```bash
@@ -24,6 +37,12 @@ npm run start
 ```
 
 4. Serve client dist via web server (Nginx, Caddy, or static hosting).
+
+Client build must point to your backend base URL:
+
+```env
+VITE_API_BASE_URL=https://your-api-domain.com/api/v1
+```
 
 ## Option B: Docker Compose
 
@@ -40,6 +59,22 @@ copy client/.env.example client/.env
 docker compose up --build -d
 ```
 
+Container defaults in this project:
+
+- Server uses `NODE_ENV=production`
+- Server Mongo connection is forced to `mongodb://mongo:27017/bangla-blood`
+- Client build arg defaults to `VITE_API_BASE_URL=/api/v1`
+- Nginx proxies `/api/*` to the server container (`server:5000`)
+- Healthchecks are enabled for Mongo, server, and client
+
+Useful overrides at deploy time:
+
+```bash
+set CLIENT_URL=https://your-frontend-domain.com
+set VITE_API_BASE_URL=/api/v1
+docker compose up --build -d
+```
+
 3. Stop services:
 
 ```bash
@@ -51,6 +86,11 @@ Default ports:
 - Client: 8080
 - Server: 5000
 - MongoDB: 27017
+
+Health endpoints:
+
+- Client container: `GET /health`
+- Server container: `GET /api/v1/health`
 
 ## Option C: CI with GitHub Actions
 
@@ -73,6 +113,7 @@ Pipeline steps:
 - Restrict CLIENT_URL to real frontend domain.
 - Use managed MongoDB with backups.
 - Enable HTTPS at load balancer/reverse proxy.
+- Disable public MongoDB port exposure in production unless absolutely required.
 - Monitor logs and request metrics.
 - Configure process manager (PM2/systemd) if not using containers.
 

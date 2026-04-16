@@ -63,6 +63,43 @@ Get user details by ID in caller scope.
 
 Auth: Union Leader and above.
 
+## Locations
+
+Public location lookup endpoints for the Bangladesh hierarchy.
+
+### GET /locations/divisions
+
+Get all divisions.
+
+### GET /locations/divisions/:divisionId/districts
+
+Get districts by division ID.
+
+### GET /locations/districts/:districtId/upazilas
+
+Get upazilas by district ID.
+
+### GET /locations/upazilas/:upazilaId/unions
+
+Get unions / pouroshava by upazila ID.
+
+Response shape:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "...",
+      "name": "Dhaka",
+      "bnName": "ঢাকা",
+      "code": "DIV-0001",
+      "externalId": 1
+    }
+  ]
+}
+```
+
 ## Donor Profiles
 
 ### GET /donor-profiles/me
