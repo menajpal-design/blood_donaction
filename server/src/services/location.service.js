@@ -73,7 +73,7 @@ export const locationService = {
     let resolvedUpazila = null;
     let resolvedUnion = null;
     let normalizedAreaType = areaType || null;
-    const normalizedWardNumber = normalizeText(wardNumber);
+    const normalizedWardNumber = wardNumber ? String(wardNumber).trim() : null;
 
     if (normalizedUnionId) {
       const union = await Union.findById(normalizedUnionId).select(
