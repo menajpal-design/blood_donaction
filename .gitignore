@@ -1,5 +1,5 @@
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -8,20 +8,33 @@ pnpm-debug.log*
 
 # Dependency directories
 node_modules/
+**/node_modules/
+
+# Build outputs and coverage
+dist/
+**/dist/
+build/
+coverage/
+.vite/
+.parcel-cache/
+.eslintcache
+*.tsbuildinfo
 
 # Environment files
 .env
-.env.local
-.env.*.local
-client/.env
-server/.env
+.env.*
+!.env.example
+client/.env*
+server/.env*
+!client/.env.example
+!server/.env.example
 
-# Build outputs
-client/dist/
-server/dist/
-coverage/
+# Local tooling/cache
+.npm-cache/
+**/.npm-cache/
 
 # IDE/OS
 .vscode/
+.idea/
 .DS_Store
 Thumbs.db

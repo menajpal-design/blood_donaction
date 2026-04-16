@@ -103,7 +103,6 @@ const bloodNeedSchema = new mongoose.Schema(
     autoDeleteAt: {
       type: Date,
       default: null,
-      index: true,
     },
     contactPhone: {
       type: String,

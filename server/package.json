@@ -5,7 +5,8 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "dev": "npx kill-port 5000 && node --watch src/server.js",
+    "dev": "node --watch src/server.js",
+    "dev:reset-port": "npx kill-port 5000 && node src/server.js",
     "start": "node src/server.js",
     "seed:locations": "node src/scripts/seed-locations.js",
     "backfill:upazila-areas": "node src/scripts/backfill-missing-upazila-areas.js",
