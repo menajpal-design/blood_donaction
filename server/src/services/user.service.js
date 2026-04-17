@@ -1,4 +1,5 @@
 import { ApiError } from '../shared/utils/api-error.js';
+import { ensureDatabaseConnection } from '../config/db.js';
 import { ROLE_LABELS, USER_ROLES, buildScopeFilter, canManageRole } from '../config/access-control.js';
 import { locationService } from './location.service.js';
 import { DonorProfile } from '../models/donor-profile.model.js';
@@ -42,22 +43,26 @@ const assertNewUserScope = (actor, payload) => {
   }
 
   if (
-    actor.role === USER_ROLES.UNION_LEADER &&
+    (actor.role === USER_ROLES.UNION_LEADER || actor.role === USER_ROLES.WARD_ADMIN) &&
     (String(payload.districtId) !== String(actor.districtId) ||
       String(payload.upazilaId) !== String(actor.upazilaId) ||
       String(payload.unionId) !== String(actor.unionId))
   ) {
-    throw new ApiError(403, 'Union Leader can only manage their own union');
+    throw new ApiError(403, 'Local admin can only manage their own union or ward scope');
   }
 };
 
 export const userService = {
   getAllUsers: async (actor) => {
+    await ensureDatabaseConnection('users:getAllUsers');
+
     const users = await User.find(buildScopeFilter(actor)).sort({ createdAt: -1 }).limit(200).lean();
     return users.map(sanitizeUser);
   },
 
   getUserById: async (userId, actor) => {
+    await ensureDatabaseConnection('users:getUserById');
+
     const user = await User.findById(userId).lean();
     if (!user) {
       throw new ApiError(404, 'User not found');
@@ -76,6 +81,8 @@ export const userService = {
   },
 
   createUserByAdmin: async (actor, payload) => {
+    await ensureDatabaseConnection('users:createUserByAdmin');
+
     const targetRole = payload.role || USER_ROLES.DONOR;
 
     if (!canManageRole(actor.role, targetRole)) {
@@ -132,5 +139,49 @@ export const userService = {
     }
 
     return created;
+  },
+
+  updateUserRoleByAdmin: async (actor, userId, payload) => {
+    await ensureDatabaseConnection('users:updateUserRoleByAdmin');
+
+    if (!canManageRole(actor.role, payload.role)) {
+      throw new ApiError(403, 'You cannot assign an equal or higher role');
+    }
+
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    const scopeFilter = buildScopeFilter(actor);
+    const inScope =
+      actor.role === USER_ROLES.SUPER_ADMIN ||
+      Object.entries(scopeFilter).every(([key, value]) => String(targetUser[key]) === String(value));
+
+    if (!inScope) {
+      throw new ApiError(403, 'User is out of your administrative scope');
+    }
+
+    if (actor.role !== USER_ROLES.SUPER_ADMIN && !canManageRole(actor.role, targetUser.role)) {
+      throw new ApiError(403, 'Cannot manage users at equal or higher hierarchy');
+    }
+
+    targetUser.role = payload.role;
+    await targetUser.save();
+
+    if (targetUser.role === USER_ROLES.DONOR) {
+      await DonorProfile.findOneAndUpdate(
+        { userId: targetUser._id },
+        {
+          $setOnInsert: {
+            bloodGroup: targetUser.bloodGroup,
+            availabilityStatus: 'available',
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      );
+    }
+
+    return sanitizeUser(targetUser.toObject());
   },
 };

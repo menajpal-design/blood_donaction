@@ -14,6 +14,7 @@ const createUserByAdminSchema = z.object({
       USER_ROLES.DISTRICT_ADMIN,
       USER_ROLES.UPAZILA_ADMIN,
       USER_ROLES.UNION_LEADER,
+      USER_ROLES.WARD_ADMIN,
       USER_ROLES.DONOR,
       USER_ROLES.FINDER,
     ])
@@ -64,5 +65,27 @@ export const createUsersByAdminBulk = asyncHandler(async (req, res) => {
     success: true,
     message: 'Users created successfully',
     data: users,
+  });
+});
+
+const updateUserRoleSchema = z.object({
+  role: z.enum([
+    USER_ROLES.DISTRICT_ADMIN,
+    USER_ROLES.UPAZILA_ADMIN,
+    USER_ROLES.UNION_LEADER,
+    USER_ROLES.WARD_ADMIN,
+    USER_ROLES.DONOR,
+    USER_ROLES.FINDER,
+  ]),
+});
+
+export const updateUserRoleByAdmin = asyncHandler(async (req, res) => {
+  const payload = updateUserRoleSchema.parse(req.body);
+  const user = await userService.updateUserRoleByAdmin(req.currentUser, req.params.userId, payload);
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: 'User role updated successfully',
+    data: user,
   });
 });
